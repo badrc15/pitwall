@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101214">
+  <title>Pitwall — Strategy Lab</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="Pitwall home"><span class="brand-mark">P</span>PITWALL</a>
+    <div class="top-meta"><span class="live-dot"></span> STRATEGY LAB <span class="meta-divider">/</span> SIMULATION 01</div>
+    <a class="top-link" href="#model">HOW IT WORKS <span>↗</span></a>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="eyebrow"><span>RACE ENGINEERING</span><span class="eyebrow-line"></span><span>YOUR CALL, PIT WALL</span></div>
+      <h1>Every second<br>is a <em>decision.</em></h1>
+      <p class="hero-copy">Change the race conditions. Compare three approaches.<br>See where the time goes.</p>
+      <div class="hero-index">01 <span>/</span> 03</div>
+    </section>
+
+    <section class="workspace" aria-label="Race strategy simulator">
+      <aside class="controls panel">
+        <div class="panel-heading"><span class="section-number">01</span><h2>RACE CONDITIONS</h2></div>
+        <p class="panel-intro">Set the parameters. The model will do the maths.</p>
+        <form id="race-form">
+          <label class="control-label" for="track">CIRCUIT <span>DEMO DATA</span></label>
+          <div class="select-wrap"><select id="track" aria-label="Circuit">
+            <option value="monza">Monza · High speed</option>
+            <option value="silverstone">Silverstone · Balanced</option>
+            <option value="monaco">Monaco · Street circuit</option>
+          </select><span class="select-arrow">⌄</span></div>
+
+          <div class="range-label"><label class="control-label" for="laps">RACE DISTANCE</label><output id="laps-out" for="laps">53 laps</output></div>
+          <input id="laps" type="range" min="20" max="80" value="53">
+          <div class="range-bounds"><span>20 LAPS</span><span>80 LAPS</span></div>
+
+          <div class="range-label"><label class="control-label" for="pace">BASE LAP TIME</label><output id="pace-out" for="pace">88.0 s</output></div>
+          <input id="pace" type="range" min="70" max="110" step="0.5" value="88">
+          <div class="range-bounds"><span>70.0 S</span><span>110.0 S</span></div>
+
+          <div class="range-label"><label class="control-label" for="pit-loss">PIT-STOP LOSS</label><output id="pit-out" for="pit-loss">22 s</output></div>
+          <input id="pit-loss" type="range" min="12" max="40" value="22">
+          <div class="range-bounds"><span>12 S</span><span>40 S</span></div>
+
+          <div class="range-label"><label class="control-label" for="wear">TYRE WEAR</label><output id="wear-out" for="wear">Standard</output></div>
+          <input id="wear" type="range" min="0.5" max="2" step="0.1" value="1">
+          <div class="range-bounds"><span>LOW</span><span>HIGH</span></div>
+          <button class="simulate-button" type="submit"><span>RUN SIMULATION</span><span class="button-arrow">→</span></button>
+        </form>
+        <p class="demo-note"><span>i</span> This is a learning model using illustrative tyre values, not live or official F1 data.</p>
+      </aside>
+
+      <section class="results panel" aria-live="polite">
+        <div class="panel-heading results-heading"><div><span class="section-number">02</span><h2>STRATEGY COMPARISON</h2></div><span class="updated-label"><span class="live-dot"></span> READY</span></div>
+        <p class="panel-intro">Estimated race time, ranked fastest first.</p>
+        <div id="results-list" class="results-list"><div class="loading-state"><span class="loader"></span> Calculating race strategies…</div></div>
+        <div class="chart-footer"><span>ESTIMATED TOTAL RACE TIME</span><span>LOWER IS FASTER <b>↓</b></span></div>
+        <div class="chart" id="chart" aria-label="Visual comparison of strategy race times"></div>
+        <section class="model-note" id="model"><div class="model-icon">i</div><div><h3>HOW THE MODEL WORKS</h3><p>Each lap adds base pace, a compound pace offset, and tyre wear that grows with stint age. Every stop adds pit-lane time. It’s a simplified sandbox for exploring trade-offs, not a race prediction.</p></div></section>
+      </section>
+    </section>
+    <footer><span>PITWALL <span class="footer-dim">· BUILT TO THINK LIKE AN ENGINEER</span></span><span>LEARN BY SIMULATING <span class="footer-dim">↗</span></span></footer>
+  </main>
+  <script src="/app.js"></script>
+</body>
+</html>
