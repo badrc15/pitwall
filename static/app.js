@@ -1,8 +1,15 @@
 const form = document.querySelector('#race-form');
 const resultList = document.querySelector('#results-list');
-const chart = document.querySelector('#chart');
+const impactChart = document.querySelector('#impact-chart');
+const trackSelect = document.querySelector('#track');
+const damageInput = document.querySelector('#damage');
+const repairInput = document.querySelector('#repair');
+const repairRow = document.querySelector('#repair-row');
+const wingInput = document.querySelector('#wing');
+let selectedCompound = 'hard';
+let simulationTimer;
 
-const tracks = {
+const trackProfiles = {
   monza: { laps: 53, pace: 88.0, pit: 22, wear: 1.0 },
   silverstone: { laps: 52, pace: 91.5, pit: 25, wear: 1.1 },
   monaco: { laps: 78, pace: 74.0, pit: 18, wear: 0.75 },
@@ -15,18 +22,79 @@ const controls = {
   wear: { input: document.querySelector('#wear'), output: document.querySelector('#wear-out'), format: value => value < 0.9 ? 'Low' : value > 1.4 ? 'High' : 'Standard' },
 };
 
-Object.values(controls).forEach(({ input, output, format }) => {
-  input.addEventListener('input', () => { output.textContent = format(input.value); });
+function wingLabel(value) {
+  const setting = Number(value);
+  if (setting < 0) return `${Math.abs(setting)} click${setting === -1 ? '' : 's'} · less wing`;
+  if (setting > 0) return `${setting} click${setting === 1 ? '' : 's'} · more wing`;
+  return 'Neutral';
+}
+
+function updateCarPreview() {
+  const color = { soft: '#ed4a3b', medium: '#f0c34f', hard: '#e8e9e6' }[selectedCompound];
+  const carStage = document.querySelector('.car-stage');
+  carStage.style.setProperty('--tyre-color', color);
+  document.querySelector('#car-compound-label').textContent = selectedCompound.toUpperCase();
+  const wing = Number(wingInput.value);
+  document.querySelector('#car-wing-label').textContent = `FRONT WING: ${wingLabel(wing).toUpperCase()}`;
+  document.querySelector('#wing-out').textContent = wingLabel(wing);
+  carStage.classList.toggle('damaged', damageInput.checked);
+  document.querySelector('#damage-mark').setAttribute('display', damageInput.checked ? 'inline' : 'none');
+  document.querySelector('#car-status-label').textContent = damageInput.checked ? 'DAMAGE MARKED' : 'READY IN THE BOX';
+}
+
+function refreshOutputs() {
+  Object.values(controls).forEach(({ input, output, format }) => {
+    output.textContent = format(input.value);
+  });
+  updateCarPreview();
+}
+
+function scheduleSimulation() {
+  window.clearTimeout(simulationTimer);
+  simulationTimer = window.setTimeout(() => runSimulation(), 180);
+}
+
+Object.values(controls).forEach(({ input }) => {
+  input.addEventListener('input', () => {
+    refreshOutputs();
+    scheduleSimulation();
+  });
 });
 
-document.querySelector('#track').addEventListener('change', event => {
-  const track = tracks[event.target.value];
-  Object.entries({ laps: track.laps, pace: track.pace, pit: track.pit, wear: track.wear }).forEach(([key, value]) => {
-    controls[key].input.value = value;
-    controls[key].output.textContent = controls[key].format(value);
+document.querySelectorAll('.compound-option').forEach(button => {
+  button.addEventListener('click', () => {
+    selectedCompound = button.dataset.compound;
+    document.querySelectorAll('.compound-option').forEach(option => {
+      const selected = option === button;
+      option.classList.toggle('selected', selected);
+      option.setAttribute('aria-pressed', String(selected));
+    });
+    updateCarPreview();
+    scheduleSimulation();
   });
-  runSimulation();
 });
+
+trackSelect.addEventListener('change', () => {
+  const profile = trackProfiles[trackSelect.value];
+  Object.entries({ laps: profile.laps, pace: profile.pace, pit: profile.pit, wear: profile.wear }).forEach(([key, value]) => {
+    controls[key].input.value = value;
+  });
+  refreshOutputs();
+  scheduleSimulation();
+});
+
+wingInput.addEventListener('input', () => {
+  updateCarPreview();
+  scheduleSimulation();
+});
+
+damageInput.addEventListener('change', () => {
+  repairRow.classList.toggle('hidden', !damageInput.checked);
+  if (!damageInput.checked) repairInput.checked = false;
+  updateCarPreview();
+  scheduleSimulation();
+});
+repairInput.addEventListener('change', scheduleSimulation);
 
 function formatTime(seconds) {
   const minutes = Math.floor(seconds / 60);
@@ -34,33 +102,53 @@ function formatTime(seconds) {
   return `${minutes}:${remainder}`;
 }
 
-function renderResults(results) {
-  resultList.innerHTML = results.map((strategy, index) => {
-    const stintTrack = strategy.stints.map(stint => {
-      const compound = stint.compound.toLowerCase();
+function signedSeconds(seconds) {
+  if (Math.abs(seconds) < 0.05) return 'No change';
+  return `${seconds < 0 ? '−' : '+'}${Math.abs(seconds).toFixed(1)} s`;
+}
+
+function renderResults(results, settings) {
+  const ordered = [...results].sort((a, b) => a.total_seconds - b.total_seconds);
+  const fastest = ordered[0];
+  resultList.innerHTML = ordered.map((strategy, index) => {
+    const stints = strategy.stints.map(stint => {
+      const compound = stint.compound_key;
       return `<span class="stint-segment compound-${compound}" style="width:${(stint.length / Number(controls.laps.input.value) * 100).toFixed(1)}%" title="${stint.compound}: laps ${stint.start}–${stint.end}"></span>`;
     }).join('');
-    const delta = index === 0 ? '<span class="best-tag">FASTEST</span>' : `<span class="strategy-gap"><b>+${strategy.gap.toFixed(1)} s</b> vs fastest</span>`;
+    const impactClass = Math.abs(strategy.race_delta) < 0.05 ? 'neutral' : strategy.race_delta < 0 ? 'gain' : 'loss';
+    const impactText = strategy.race_delta < 0 ? `${signedSeconds(strategy.race_delta)} vs plan` : strategy.race_delta > 0 ? `${signedSeconds(strategy.race_delta)} vs plan` : 'Same as plan';
     return `<article class="strategy-card ${index === 0 ? 'best' : ''}">
-      <div class="strategy-main"><span class="position">0${index + 1}</span><span class="strategy-title">${strategy.name}</span>${delta}</div>
+      <div class="strategy-main"><span class="position">0${index + 1}</span><span class="strategy-title">${strategy.name}</span>${index === 0 ? '<span class="best-tag">QUICKEST</span>' : ''}</div>
       <div class="strategy-time">${formatTime(strategy.total_seconds)}</div>
-      <div class="strategy-sub">${strategy.description} <span>·</span> ${strategy.stops} ${strategy.stops === 1 ? 'STOP' : 'STOPS'} <span>·</span> ${strategy.average_lap.toFixed(3)} AVG</div>
-      <div class="stint-track">${stintTrack}</div>
+      <div class="strategy-sub">${strategy.stops} ${strategy.stops === 1 ? 'STOP' : 'STOPS'} · ${strategy.average_lap.toFixed(3)} s average lap</div>
+      <div class="strategy-impact ${impactClass}">${impactText}</div>
+      <div class="stint-track">${stints}</div>
     </article>`;
   }).join('');
 
-  const max = Math.max(...results.map(item => item.total_seconds));
-  chart.innerHTML = results.map((strategy, index) => {
-    const width = (strategy.total_seconds / max) * 100;
-    return `<div class="chart-bar" style="width:${width.toFixed(2)}%;height:5px;margin-bottom:3px" title="${strategy.name}: ${formatTime(strategy.total_seconds)}"></div>`;
+  const maxDelta = Math.max(1, ...ordered.map(item => Math.abs(item.race_delta)));
+  impactChart.innerHTML = ordered.map(strategy => {
+    const delta = strategy.race_delta;
+    const isGain = delta < -0.05;
+    const isLoss = delta > 0.05;
+    const tone = isGain ? 'gain' : isLoss ? 'loss' : 'neutral';
+    const width = Math.abs(delta) < 0.05 ? 0 : Math.max(2, Math.abs(delta) / maxDelta * 48);
+    const left = isGain ? 50 - width : 50;
+    return `<div class="impact-row"><span class="impact-name">${strategy.name}</span><div class="impact-track"><span class="impact-fill ${tone}" style="left:${left}%;width:${width}%"></span></div><span class="impact-value ${tone}">${signedSeconds(delta)}</span></div>`;
   }).join('');
+
+  document.querySelector('#summary-tyre').textContent = settings.stop_tyre.toUpperCase();
+  document.querySelector('#summary-wing').textContent = wingLabel(settings.wing_clicks).toUpperCase();
+  document.querySelector('#summary-pace').textContent = `${fastest.post_stop_lap_time.toFixed(3)} s/lap`;
+  document.querySelector('#summary-service').textContent = `${fastest.extra_service_seconds.toFixed(1)} s`;
+  document.querySelector('.updated-label').innerHTML = '<span class="live-dot"></span> UPDATED JUST NOW';
 }
 
 async function runSimulation(event) {
   if (event) event.preventDefault();
-  const button = form.querySelector('button');
+  const button = form.querySelector('.simulate-button');
   button.disabled = true;
-  button.querySelector('span:first-child').textContent = 'CALCULATING…';
+  button.querySelector('span:first-child').textContent = 'UPDATING YOUR RACE…';
   try {
     const response = await fetch('/api/simulate', {
       method: 'POST',
@@ -70,19 +158,24 @@ async function runSimulation(event) {
         base_pace: controls.pace.input.value,
         pit_loss: controls.pit.input.value,
         wear_scale: controls.wear.input.value,
+        track: trackSelect.value,
+        stop_tyre: selectedCompound,
+        wing_clicks: wingInput.value,
+        front_wing_damage: damageInput.checked,
+        repair_damage: damageInput.checked && repairInput.checked,
       }),
     });
-    if (!response.ok) throw new Error('The simulator could not calculate this setup.');
+    if (!response.ok) throw new Error('The race setup could not be calculated. Please try again.');
     const data = await response.json();
-    renderResults(data.results);
-    document.querySelector('.updated-label').innerHTML = '<span class="live-dot"></span> JUST UPDATED';
+    renderResults(data.results, data.settings);
   } catch (error) {
-    resultList.innerHTML = `<p class="demo-note">${error.message} Refresh the page and try again.</p>`;
+    resultList.innerHTML = `<p class="error-note">${error.message} Refresh the page to try again.</p>`;
   } finally {
     button.disabled = false;
-    button.querySelector('span:first-child').textContent = 'RUN SIMULATION';
+    button.querySelector('span:first-child').textContent = 'SEE WHAT HAPPENS';
   }
 }
 
 form.addEventListener('submit', runSimulation);
+refreshOutputs();
 runSimulation();
