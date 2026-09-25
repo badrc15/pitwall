@@ -1,6 +1,6 @@
 # Pitwall
 
-Pitwall is a Python-powered F1 strategy sandbox. Compare three example tyre plans, then change the tyre fitted at the first stop, adjust the front-wing profile, or repair simulated front-wing damage and watch the lap-time and race-time estimates respond. Values are illustrative, not official data or race predictions.
+Pitwall is a Python-powered F1 strategy sandbox. [Open the live simulator](https://pitwall.sunny-flint-1791.chatgpt.site/). Compare three example tyre plans, then change the tyre fitted at the first stop, adjust the front-wing profile, or repair simulated front-wing damage and watch the lap-time and race-time estimates respond. Values are illustrative, not official data or race predictions.
 
 ## Run it locally
 
@@ -20,6 +20,7 @@ Open <http://localhost:8000>. On a hosting service that provides a `PORT` enviro
 - `static/index.html` is the page structure and controls.
 - `static/styles.css` controls the visual design and responsive layout.
 - `static/app.js` reads the controls, calls the Python API, and renders the returned strategies.
+- `dist/` is the browser-ready copy used by static hosting. Its JavaScript calculation fallback keeps the public simulator interactive; locally, the same screens use the Python API.
 
 ## The model
 
