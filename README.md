@@ -1,6 +1,6 @@
 # Pitwall
 
-Pitwall is a Python-powered F1 strategy sandbox. [Open the live simulator](https://pitwall.sunny-flint-1791.chatgpt.site/). Compare three example tyre plans, then change the tyre fitted at the first stop, adjust the front-wing profile, or repair simulated front-wing damage and watch the lap-time and race-time estimates respond. Values are illustrative, not official data or race predictions.
+Pitwall is a Python-powered F1 strategy sandbox. [Open the live simulator](https://badrc15.github.io/pitwall/). Compare three example tyre plans, then change the tyre fitted at the first stop, adjust the front-wing profile, or repair simulated front-wing damage and watch the lap-time and race-time estimates respond. Values are illustrative, not official data or race predictions.
 
 ## Run it locally
 
@@ -20,7 +20,7 @@ Open <http://localhost:8000>. On a hosting service that provides a `PORT` enviro
 - `static/index.html` is the page structure and controls.
 - `static/styles.css` controls the visual design and responsive layout.
 - `static/app.js` reads the controls, calls the Python API, and renders the returned strategies.
-- `dist/` is the browser-ready copy used by static hosting. Its JavaScript calculation fallback keeps the public simulator interactive; locally, the same screens use the Python API.
+- `dist/` is the browser-ready static build. `docs/` mirrors that build for GitHub Pages, where the in-browser calculation fallback keeps the simulator interactive; locally, the same screens use the Python API.
 
 ## The model
 
@@ -34,7 +34,7 @@ For each stint, the simulator adds a base lap time, a compound pace offset, and 
 4. Add a new strategy shape in `plans` and decide how the race distance should be split across its stints.
 5. Replace illustrative inputs with sourced historical data, recording the source and assumptions in the interface.
 
-The current version intentionally needs no external packages or API keys. A later deployment can run `python server.py` as its start command; we can pick a hosting provider and publish it once you're ready.
+The public GitHub Pages site serves the browser-ready files from `docs/`. Keep that folder in sync with `dist/` when publishing front-end changes. The current app needs no external packages or API keys; the Python server remains available for local development.
 
 The race grid uses fictional driver and team names with fixed pace profiles. It is repeatable for the same inputs and is intended to explain relative strategy effects, not to predict a real race.
 
