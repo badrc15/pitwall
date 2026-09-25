@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101214">
+  <meta name="description" content="Explore Formula One pit-stop strategy, compare tyre choices, and race against a fictional grid in Pitwall’s interactive strategy simulator.">
+  <meta property="og:title" content="Pitwall — F1 Strategy Simulator">
+  <meta property="og:description" content="Compare a pit strategy and see your projected place on the grid.">
+  <meta property="og:type" content="website">
+  <title>Pitwall — F1 Strategy Simulator</title>
+  <link rel="icon" type="image/svg+xml" href="./favicon.svg">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="./" aria-label="Pitwall home"><span class="brand-mark">P</span>PITWALL</a>
+    <div class="top-meta"><span class="live-dot"></span> STRATEGY LAB <span class="meta-divider">/</span> YOUR RACE, YOUR CALL</div>
+    <nav class="header-links" aria-label="Pitwall links"><a class="top-link" href="#how-it-works">HOW IT WORKS <span>↗</span></a><a class="top-link portfolio-link" href="https://badrc15.github.io/BadrChoudhary.github.io/">BADR’S PORTFOLIO <span>↗</span></a></nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="eyebrow"><span>WELCOME TO THE PIT WALL</span><span class="eyebrow-line"></span><span>MAKE THE STOP COUNT</span></div>
+      <h1>Make the call.<br><em>See the race.</em></h1>
+      <p class="hero-copy">Set up your car, compare pit calls, and race your strategy against the grid.<br>Your controls are below; no account or install needed.</p>
+      <div class="hero-index">PITWALL <span>/</span> LIVE SIMULATOR</div>
+    </section>
+
+    <form id="race-form" class="workspace" aria-label="Pitwall race strategy simulator">
+      <div class="left-column">
+        <section class="panel conditions-panel">
+          <div class="panel-heading"><span class="section-number">01</span><div><h2>SET YOUR RACE</h2><p class="panel-intro">Start with a few simple conditions.</p></div></div>
+          <label class="control-label" for="track">CHOOSE A CIRCUIT <span>DEMO VALUES</span></label>
+          <div class="select-wrap"><select id="track" aria-label="Circuit">
+            <option value="monza">Monza · Fast and low-drag</option>
+            <option value="silverstone">Silverstone · A bit of everything</option>
+            <option value="monaco">Monaco · Tight and twisty</option>
+          </select><span class="select-arrow">⌄</span></div>
+
+          <div class="range-label"><label class="control-label" for="laps">RACE LENGTH</label><output id="laps-out" for="laps">53 laps</output></div>
+          <input id="laps" type="range" min="20" max="80" value="53">
+          <div class="range-bounds"><span>20 LAPS</span><span>80 LAPS</span></div>
+
+          <div class="range-label"><label class="control-label" for="pace">STARTING LAP PACE</label><output id="pace-out" for="pace">88.0 s</output></div>
+          <input id="pace" type="range" min="70" max="110" step="0.5" value="88">
+          <div class="range-bounds"><span>70.0 S</span><span>110.0 S</span></div>
+
+          <details class="advanced-controls"><summary>More race settings <span>+</span></summary>
+            <div class="range-label"><label class="control-label" for="pit-loss">PIT-LANE TIME LOSS</label><output id="pit-out" for="pit-loss">22 s</output></div>
+            <input id="pit-loss" type="range" min="12" max="40" value="22">
+            <div class="range-bounds"><span>12 S</span><span>40 S</span></div>
+            <div class="range-label"><label class="control-label" for="wear">TYRE WEAR</label><output id="wear-out" for="wear">Standard</output></div>
+            <input id="wear" type="range" min="0.5" max="2" step="0.1" value="1">
+            <div class="range-bounds"><span>LOW</span><span>HIGH</span></div>
+          </details>
+        </section>
+
+        <section class="panel garage-panel">
+          <div class="panel-heading"><span class="section-number">02</span><div><h2>YOUR PIT-STOP CALL</h2><p class="panel-intro">Choose what the crew changes at your first stop.</p></div></div>
+          <div class="car-stage">
+            <div class="car-stage-top"><span>CAR 01 <b>·</b> TOP VIEW</span><span class="car-status"><i></i><span id="car-status-label">READY IN THE BOX</span></span></div>
+            <svg class="formula-car" viewBox="0 0 620 220" role="img" aria-labelledby="car-title car-desc">
+              <title id="car-title">Pitwall Formula car</title><desc id="car-desc">A top-down open-wheel race car. Its four tyre markers change colour with your selected compound.</desc>
+              <defs>
+                <linearGradient id="body-paint" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff6c57"/><stop offset="1" stop-color="#c92e28"/></linearGradient>
+                <linearGradient id="wing-paint" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#ee4639"/><stop offset="1" stop-color="#9e2725"/></linearGradient>
+              </defs>
+              <ellipse cx="315" cy="110" rx="259" ry="66" fill="#ed463422"/>
+              <g class="wheel-group">
+                <g class="wheel wheel-front-left"><rect x="390" y="28" width="88" height="36" rx="13"/><path class="wheel-band" d="M405 30v32 M414 29v34 M453 29v34 M462 30v32"/></g>
+                <g class="wheel wheel-front-right"><rect x="390" y="156" width="88" height="36" rx="13"/><path class="wheel-band" d="M405 158v32 M414 157v34 M453 157v34 M462 158v32"/></g>
+                <g class="wheel wheel-rear-left"><rect x="157" y="24" width="91" height="40" rx="14"/><path class="wheel-band" d="M173 26v36 M183 25v38 M223 25v38 M233 26v36"/></g>
+                <g class="wheel wheel-rear-right"><rect x="157" y="156" width="91" height="40" rx="14"/><path class="wheel-band" d="M173 158v36 M183 157v38 M223 157v38 M233 158v36"/></g>
+              </g>
+              <path d="M39 78 Q48 70 72 70 L137 75 L173 82 L230 79 L265 67 Q278 62 302 63 L373 73 Q401 77 427 83 L492 90 L526 97 L588 103 L603 110 L588 117 L526 123 L492 130 L427 137 Q401 143 373 147 L302 157 Q278 158 265 153 L230 141 L173 138 L137 145 L72 150 Q48 150 39 142 L66 118 L66 102 Z" fill="url(#body-paint)" stroke="#ff8b72" stroke-width="2"/>
+              <path d="M59 79h64l22 8-12 13H64 M59 141h64l22-8-12-13H64" fill="url(#wing-paint)" stroke="#ff8b72" stroke-width="2"/>
+              <path d="M586 94l22 10v12l-22 10-20-9v-14z" fill="#f4f0e9" stroke="#fff" stroke-width="2"/>
+              <path d="M173 82h78l30-15h47l22 17-6 12H237l-17 14h-42z M173 138h78l30 15h47l22-17-6-12H237l-17-14h-42z" fill="#a72927" opacity=".8"/>
+              <path d="M253 86 Q274 72 304 75 L350 87l12 12-16 8h-89z M253 134 Q274 148 304 145l46-12 12-12-16-8h-89z" fill="#ed5946"/>
+              <path d="M337 89l35-9 46 10 24 20-24 20-46 10-35-9-9-21z" fill="#8d2526" stroke="#ff8b72" stroke-width="2"/>
+              <path d="M360 93q19-12 37 0l8 17-8 17q-18 12-37 0l-8-17z" fill="#17191b" stroke="#777c7d" stroke-width="2"/>
+              <path d="M379 96v28 M365 110h29" stroke="#929796" stroke-width="2"/>
+              <path d="M473 86l33 9v8l-35-5z M473 134l33-9v-8l-35 5z" fill="#f4f0e9" opacity=".85"/>
+              <path d="M259 110h72" stroke="#ffd0bc" stroke-width="2" opacity=".65"/>
+              <text x="104" y="113" fill="#fff" font-family="monospace" font-size="9" letter-spacing="2">PW // 01</text>
+              <g class="wing-indicator"><path d="M535 74v-13m-5 5 5-5 5 5" fill="none" stroke="#ffd074" stroke-width="2"/><path d="M535 146v13m-5-5 5 5 5-5" fill="none" stroke="#ffd074" stroke-width="2"/></g>
+              <g id="damage-mark" display="none" fill="none" stroke="#ffe06a" stroke-width="3" stroke-linecap="round"><path d="M538 98l-8 8 7 3-8 9"/><path d="M550 95l-5 6 6 2" stroke-width="2"/></g>
+            </svg>
+            <div class="car-stage-bottom"><span>ALL FOUR TYRES: <b id="car-compound-label">HARD</b></span><span id="car-wing-label">FRONT WING: NEUTRAL</span></div>
+          </div>
+
+          <fieldset class="compound-fieldset"><legend class="control-label">FIT A FRESH SET OF TYRES</legend>
+            <div class="compound-options">
+              <button class="compound-option" type="button" data-compound="soft" aria-pressed="false"><span class="compound-dot soft-dot"></span><span><b>Soft</b><small>Quick now · wears faster</small></span></button>
+              <button class="compound-option" type="button" data-compound="medium" aria-pressed="false"><span class="compound-dot medium-dot"></span><span><b>Medium</b><small>Balanced all-rounder</small></span></button>
+              <button class="compound-option selected" type="button" data-compound="hard" aria-pressed="true"><span class="compound-dot hard-dot"></span><span><b>Hard</b><small>Slower start · lasts longer</small></span></button>
+            </div>
+          </fieldset>
+
+          <div class="setup-control">
+            <div class="range-label"><label class="control-label" for="wing">FRONT-WING ADJUSTMENT</label><output id="wing-out" for="wing">Neutral</output></div>
+            <p class="control-help">More wing can help through corners; less can help on long straights.</p>
+            <input id="wing" type="range" min="-2" max="2" step="1" value="0">
+            <div class="range-bounds"><span>LESS WING</span><span>MORE WING</span></div>
+          </div>
+
+          <div class="damage-card">
+            <label class="check-row"><span class="check-copy"><b>Front-wing damage?</b><small>Try a damaged-car scenario.</small></span><input id="damage" type="checkbox"><span class="switch" aria-hidden="true"></span></label>
+            <div id="repair-row" class="repair-row hidden"><label class="check-row"><span class="check-copy"><b>Repair it at the stop</b><small>Takes a little longer, then restores pace.</small></span><input id="repair" type="checkbox"><span class="switch" aria-hidden="true"></span></label></div>
+          </div>
+
+          <div class="callout-hint"><span class="hint-icon">↗</span><span>Your choices apply from the first pit stop onward. Change one thing at a time to see its effect.</span></div>
+          <button class="simulate-button" type="submit"><span>SEE WHAT HAPPENS</span><span class="button-arrow">→</span></button>
+        </section>
+      </div>
+
+      <section class="results panel" aria-live="polite">
+        <div class="results-topline"><div class="panel-heading"><span class="section-number">03</span><div><h2>RACE RESULTS</h2><p class="panel-intro">Compare your call with the original plan.</p></div></div><span class="updated-label"><span class="live-dot"></span> READY</span></div>
+        <div id="summary" class="summary-strip">
+          <div><span class="summary-label">PIT TYRE</span><b id="summary-tyre">HARD</b></div>
+          <div><span class="summary-label">WING SETUP</span><b id="summary-wing">NEUTRAL</b></div>
+          <div><span class="summary-label">PACE AFTER STOP</span><b id="summary-pace">—</b></div>
+          <div><span class="summary-label">EXTRA SERVICE</span><b id="summary-service">0.0 s</b></div>
+        </div>
+        <div id="results-list" class="results-list"><div class="loading-state"><span class="loader"></span> Putting your race together…</div></div>
+        <section class="race-sim" aria-labelledby="race-sim-title">
+          <div class="race-sim-heading"><div><span class="sim-kicker">PUT YOUR CALL TO THE TEST</span><h3 id="race-sim-title">Race against the grid</h3><p>Pick one of your plans and see how it holds up against 10 fictional rivals.</p></div><span class="grid-count">11 CARS</span></div>
+          <div class="race-controls">
+            <label class="race-select-label" for="strategy-choice">YOUR STRATEGY<select id="strategy-choice"></select></label>
+            <label class="race-lap-label" for="current-lap">LAP NOW <output id="current-lap-out" for="current-lap">18</output></label>
+            <input id="current-lap" type="range" min="1" max="53" value="18">
+            <button id="run-race" class="race-button" type="button"><span>RUN RACE SIMULATION</span><span>→</span></button>
+          </div>
+          <div class="position-comparison" aria-live="polite">
+            <div class="position-card current"><span class="position-caption">YOUR POSITION NOW</span><b id="current-position">—</b><small id="current-position-copy">Set up the race above</small></div>
+            <div class="position-arrow" aria-hidden="true">→</div>
+            <div class="position-card projected"><span class="position-caption">PROJECTED AT THE FLAG</span><b id="projected-position">—</b><small id="projected-position-copy">Choose a plan and race it</small></div>
+          </div>
+          <div class="race-progress-wrap"><div class="race-progress-label"><span id="race-progress-text">READY ON THE GRID</span><span id="race-progress-lap">LAP — / —</span></div><div class="race-progress"><span id="race-progress-bar"></span></div></div>
+          <div id="race-leaderboard" class="race-leaderboard" aria-live="polite"><div class="leaderboard-empty">Your grid and projected finishing order will appear here.</div></div>
+          <p class="fictional-note">Fictional drivers · illustrative pace model · each run is repeatable for the same settings.</p>
+        </section>
+        <div class="chart-heading"><span>RACE TIME VS ORIGINAL PLAN</span><span>QUICKER <b>←</b> SLOWER</span></div>
+        <div id="impact-chart" class="impact-chart" aria-label="Visual comparison of time gained or lost against the original plan"></div>
+        <div class="model-note" id="how-it-works"><div class="model-icon">i</div><div><h3>THE SHORT VERSION</h3><p>Each strategy estimates lap pace from tyre compound and wear. Your tyre swap, front-wing setting, and optional damage repair affect laps after the stop; extra service time is added to the race total. Every value is illustrative, so use the simulator to learn the trade-offs—not as a race prediction.</p><a href="https://www.fia.com/system/files/documents/fia_2026_f1_regulations_-_section_b_sporting_-_iss_08_-_2026-08-05_7.pdf" target="_blank" rel="noopener noreferrer">Read the FIA 2026 Sporting Regulations ↗</a></div></div>
+      </section>
+    </form>
+    <footer><span>PITWALL <span class="footer-dim">· BUILT TO THINK LIKE AN ENGINEER</span></span><span>LEARN BY TRYING <span class="footer-dim">↗</span></span></footer>
+  </main>
+  <script src="./app.js"></script>
+</body>
+</html>
+
