@@ -16,6 +16,7 @@ Open <http://localhost:8000>. On a hosting service that provides a `PORT` enviro
 ## How the pieces fit together
 
 - `server.py` serves the web page and contains the race model. The browser sends the selected values to `POST /api/simulate`.
+- `POST /api/race-sim` compares a chosen strategy with a repeatable field of fictional drivers and returns current and projected positions.
 - `static/index.html` is the page structure and controls.
 - `static/styles.css` controls the visual design and responsive layout.
 - `static/app.js` reads the controls, calls the Python API, and renders the returned strategies.
@@ -33,3 +34,6 @@ For each stint, the simulator adds a base lap time, a compound pace offset, and 
 5. Replace illustrative inputs with sourced historical data, recording the source and assumptions in the interface.
 
 The current version intentionally needs no external packages or API keys. A later deployment can run `python server.py` as its start command; we can pick a hosting provider and publish it once you're ready.
+
+The race grid uses fictional driver and team names with fixed pace profiles. It is repeatable for the same inputs and is intended to explain relative strategy effects, not to predict a real race.
+

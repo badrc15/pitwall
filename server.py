@@ -31,6 +31,20 @@ TRACKS = {
 ACCIDENT_DAMAGE_PER_LAP = 0.42
 REPAIR_TIME = 7.0
 
+# Fictional grid profiles keep the race sandbox deterministic and independent of live F1 data.
+RACE_FIELD = [
+    {"driver": "M. Vale", "team": "Apex GP", "pace": -0.34, "racecraft": -0.08},
+    {"driver": "L. Kim", "team": "Northstar", "pace": -0.25, "racecraft": 0.12},
+    {"driver": "A. Costa", "team": "Scuderia Nova", "pace": -0.16, "racecraft": -0.18},
+    {"driver": "J. Okafor", "team": "Velocity", "pace": -0.08, "racecraft": 0.04},
+    {"driver": "S. Laurent", "team": "Apex GP", "pace": 0.05, "racecraft": -0.10},
+    {"driver": "R. Patel", "team": "Northstar", "pace": 0.13, "racecraft": 0.15},
+    {"driver": "T. Fischer", "team": "Scuderia Nova", "pace": 0.21, "racecraft": -0.05},
+    {"driver": "N. Haddad", "team": "Velocity", "pace": 0.29, "racecraft": 0.08},
+    {"driver": "E. Rossi", "team": "Apex GP", "pace": 0.38, "racecraft": -0.14},
+    {"driver": "P. Singh", "team": "Northstar", "pace": 0.47, "racecraft": 0.02},
+]
+
 
 def make_stints(laps: int, plan: list[tuple[str, float]]) -> list[dict]:
     """Split the race into stints; the final stint absorbs rounding remainder."""
@@ -139,6 +153,52 @@ def simulate(
     return sorted(results, key=lambda result: result["total_seconds"])
 
 
+def simulate_race(laps, base_pace, pit_loss, wear_scale, current_lap, strategy_name,
+                  track, stop_tyre, wing_clicks, front_wing_damage, repair_damage):
+    """Project one selected user strategy against a fictional, repeatable grid."""
+    strategies = simulate(laps, base_pace, pit_loss, wear_scale, track, stop_tyre,
+                          wing_clicks, front_wing_damage, repair_damage)
+    user = next((item for item in strategies if item["name"] == strategy_name), strategies[0])
+    baseline = next(item for item in strategies if item["name"] == "The Undercut")
+    reference = next(item for item in simulate(laps, base_pace, pit_loss, wear_scale, track,
+                                               "hard", 0, front_wing_damage, False)
+                     if item["name"] == "The Undercut")
+    current_lap = max(1, min(laps, int(current_lap)))
+    user_lap = (baseline["total_seconds"] - baseline["stops"] * pit_loss - baseline["extra_service_seconds"]) / laps
+    user_current = user_lap * current_lap
+    if current_lap >= baseline["first_stop_lap"]:
+        user_current += pit_loss + baseline["extra_service_seconds"]
+
+    field = [{
+        "driver": profile["driver"], "team": profile["team"],
+        "current_seconds": round(user_current + profile["pace"] * current_lap + profile["racecraft"] * current_lap / laps, 1),
+        "finish_seconds": round(reference["total_seconds"] + profile["pace"] * laps + profile["racecraft"], 1),
+        "you": False,
+    } for profile in RACE_FIELD]
+    field.append({
+        "driver": "YOU", "team": "PITWALL RACING",
+        "current_seconds": round(user_current, 1), "finish_seconds": user["total_seconds"], "you": True,
+    })
+    current_order = sorted(field, key=lambda item: item["current_seconds"])
+    finish_order = sorted(field, key=lambda item: item["finish_seconds"])
+    current_position = next(i + 1 for i, item in enumerate(current_order) if item["you"])
+    projected_position = next(i + 1 for i, item in enumerate(finish_order) if item["you"])
+    leader_time = finish_order[0]["finish_seconds"]
+    for i, item in enumerate(finish_order, start=1):
+        item["projected_position"] = i
+        item["gap_to_leader"] = round(item["finish_seconds"] - leader_time, 1)
+    return {
+        "current_position": current_position,
+        "projected_position": projected_position,
+        "current_lap": current_lap,
+        "laps": laps,
+        "strategy": user["name"],
+        "finish_order": finish_order,
+        "current_order": current_order,
+        "user_finish_seconds": user["total_seconds"],
+    }
+
+
 class PitwallHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         path = urlparse(self.path).path
@@ -159,7 +219,8 @@ class PitwallHandler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def do_POST(self):
-        if urlparse(self.path).path != "/api/simulate":
+        endpoint = urlparse(self.path).path
+        if endpoint not in ("/api/simulate", "/api/race-sim"):
             self.send_error(404)
             return
         try:
@@ -174,8 +235,17 @@ class PitwallHandler(BaseHTTPRequestHandler):
             wing_clicks = int(values.get("wing_clicks", 0))
             front_wing_damage = bool(values.get("front_wing_damage", False))
             repair_damage = bool(values.get("repair_damage", False))
-            result = {
-                "results": simulate(
+            race_values = (laps, base_pace, pit_loss, wear_scale)
+            race_options = (track, stop_tyre, wing_clicks, front_wing_damage, repair_damage)
+            if endpoint == "/api/race-sim":
+                result = simulate_race(
+                    *race_values,
+                    max(1, min(laps, int(values.get("current_lap", max(1, laps // 3)))),),
+                    str(values.get("strategy", "The Undercut")),
+                    *race_options,
+                )
+            else:
+                result = {"results": simulate(
                     laps,
                     base_pace,
                     pit_loss,
@@ -192,8 +262,7 @@ class PitwallHandler(BaseHTTPRequestHandler):
                     "wing_clicks": max(-2, min(2, wing_clicks)),
                     "front_wing_damage": front_wing_damage,
                     "repair_damage": repair_damage,
-                },
-            }
+                }}
             body = json.dumps(result).encode()
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
@@ -210,3 +279,4 @@ class PitwallHandler(BaseHTTPRequestHandler):
 if __name__ == "__main__":
     print(f"Pitwall is running at http://localhost:{PORT}")
     ThreadingHTTPServer(("0.0.0.0", PORT), PitwallHandler).serve_forever()
+

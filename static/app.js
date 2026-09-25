@@ -6,8 +6,12 @@ const damageInput = document.querySelector('#damage');
 const repairInput = document.querySelector('#repair');
 const repairRow = document.querySelector('#repair-row');
 const wingInput = document.querySelector('#wing');
+const strategyChoice = document.querySelector('#strategy-choice');
+const currentLapInput = document.querySelector('#current-lap');
+const raceButton = document.querySelector('#run-race');
 let selectedCompound = 'hard';
 let simulationTimer;
+let raceTimer;
 
 const trackProfiles = {
   monza: { laps: 53, pace: 88.0, pit: 22, wear: 1.0 },
@@ -47,10 +51,19 @@ function refreshOutputs() {
     output.textContent = format(input.value);
   });
   updateCarPreview();
+  updateRaceLapControl();
 }
 
 function scheduleSimulation() {
   window.clearTimeout(simulationTimer);
+  window.clearInterval(raceTimer);
+  document.querySelector('#current-position').textContent = '—';
+  document.querySelector('#projected-position').textContent = '—';
+  document.querySelector('#current-position-copy').textContent = 'Settings changed';
+  document.querySelector('#projected-position-copy').textContent = 'Run the race again';
+  document.querySelector('#race-leaderboard').innerHTML = '<div class="leaderboard-empty">Race settings changed. Run the simulation again for an updated projection.</div>';
+  document.querySelector('#race-progress-text').textContent = 'READY ON THE GRID';
+  document.querySelector('#race-progress-bar').style.width = '0%';
   simulationTimer = window.setTimeout(() => runSimulation(), 180);
 }
 
@@ -110,6 +123,9 @@ function signedSeconds(seconds) {
 function renderResults(results, settings) {
   const ordered = [...results].sort((a, b) => a.total_seconds - b.total_seconds);
   const fastest = ordered[0];
+  const previousStrategy = strategyChoice.value;
+  strategyChoice.innerHTML = ordered.map(strategy => `<option value="${strategy.name}">${strategy.name} · ${formatTime(strategy.total_seconds)}</option>`).join('');
+  strategyChoice.value = ordered.some(strategy => strategy.name === previousStrategy) ? previousStrategy : fastest.name;
   resultList.innerHTML = ordered.map((strategy, index) => {
     const stints = strategy.stints.map(stint => {
       const compound = stint.compound_key;
@@ -143,6 +159,84 @@ function renderResults(results, settings) {
   document.querySelector('#summary-service').textContent = `${fastest.extra_service_seconds.toFixed(1)} s`;
   document.querySelector('.updated-label').innerHTML = '<span class="live-dot"></span> UPDATED JUST NOW';
 }
+
+function renderLeaderboard(order, mode, animatedLap, totalLaps) {
+  const leaderTime = order[0]?.time ?? 0;
+  document.querySelector('#race-leaderboard').innerHTML = '<div class="leaderboard-head"><span>POS</span><span>DRIVER</span><span>TEAM</span><span>GAP</span></div>' + order.map((entry, index) => {
+    const gap = index === 0 ? 'LEADER' : `+${(entry.time - leaderTime).toFixed(1)}s`;
+    return `<div class="leaderboard-row ${entry.you ? 'your-car' : ''}"><span class="leaderboard-pos">${String(index + 1).padStart(2, '0')}</span><b>${entry.driver}${entry.you ? ' <i>YOU</i>' : ''}</b><span class="leaderboard-team">${entry.team}</span><span class="leaderboard-gap">${gap}</span></div>`;
+  }).join('');
+  if (mode === 'race') {
+    document.querySelector('#race-progress-lap').textContent = `LAP ${animatedLap} / ${totalLaps}`;
+    document.querySelector('#race-progress-bar').style.width = `${Math.min(100, animatedLap / totalLaps * 100)}%`;
+  }
+}
+
+const wait = ms => new Promise(resolve => window.setTimeout(resolve, ms));
+
+async function runRaceSimulation() {
+  window.clearInterval(raceTimer);
+  raceButton.disabled = true;
+  raceButton.querySelector('span:first-child').textContent = 'LIGHTS OUT…';
+  document.querySelector('#race-progress-text').textContent = 'RACE IN PROGRESS';
+  try {
+    const response = await fetch('/api/race-sim', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        laps: controls.laps.input.value, base_pace: controls.pace.input.value,
+        pit_loss: controls.pit.input.value, wear_scale: controls.wear.input.value,
+        track: trackSelect.value, stop_tyre: selectedCompound, wing_clicks: wingInput.value,
+        front_wing_damage: damageInput.checked, repair_damage: damageInput.checked && repairInput.checked,
+        current_lap: currentLapInput.value, strategy: strategyChoice.value,
+      }),
+    });
+    if (!response.ok) throw new Error('The race could not be simulated. Please try again.');
+    const race = await response.json();
+    document.querySelector('#current-position').textContent = `P${race.current_position}`;
+    document.querySelector('#current-position-copy').textContent = `Lap ${race.current_lap} · before the call`;
+    document.querySelector('#projected-position').textContent = `P${race.projected_position}`;
+    document.querySelector('#projected-position-copy').textContent = race.strategy;
+
+    const current = race.current_order.map(item => ({ ...item, time: item.current_seconds }));
+    renderLeaderboard(current, 'current', race.current_lap, race.laps);
+    const startLap = race.current_lap;
+    const steps = Math.min(24, Math.max(8, race.laps - startLap));
+    for (let step = 1; step <= steps; step += 1) {
+      const progress = step / steps;
+      const order = race.finish_order.map(item => ({
+        ...item, time: item.current_seconds + (item.finish_seconds - item.current_seconds) * progress,
+      })).sort((a, b) => a.time - b.time);
+      const lap = Math.min(race.laps, Math.round(startLap + (race.laps - startLap) * progress));
+      renderLeaderboard(order, 'race', lap, race.laps);
+      await wait(55);
+    }
+    renderLeaderboard(race.finish_order.map(item => ({ ...item, time: item.finish_seconds })), 'finish', race.laps, race.laps);
+    document.querySelector('#race-progress-text').textContent = 'CHEQUERED FLAG · PROJECTED CLASSIFICATION';
+    document.querySelector('#projected-position-copy').textContent = `${race.strategy} · ${formatTime(race.user_finish_seconds)}`;
+  } catch (error) {
+    document.querySelector('#race-progress-text').textContent = 'SIMULATION UNAVAILABLE';
+    document.querySelector('#race-leaderboard').innerHTML = `<p class="error-note">${error.message}</p>`;
+  } finally {
+    raceButton.disabled = false;
+    raceButton.querySelector('span:first-child').textContent = 'RUN RACE SIMULATION';
+  }
+}
+
+function updateRaceLapControl() {
+  const laps = Number(controls.laps.input.value);
+  const previousMax = Number(currentLapInput.max);
+  const current = Number(currentLapInput.value);
+  currentLapInput.max = String(laps);
+  if (previousMax !== laps || current > laps) currentLapInput.value = String(Math.min(laps, Math.max(1, Math.round(laps / 3))));
+  document.querySelector('#current-lap-out').textContent = currentLapInput.value;
+}
+
+currentLapInput.addEventListener('input', () => {
+  document.querySelector('#current-lap-out').textContent = currentLapInput.value;
+  scheduleSimulation();
+});
+strategyChoice.addEventListener('change', scheduleSimulation);
+raceButton.addEventListener('click', runRaceSimulation);
 
 async function runSimulation(event) {
   if (event) event.preventDefault();
@@ -179,3 +273,4 @@ async function runSimulation(event) {
 form.addEventListener('submit', runSimulation);
 refreshOutputs();
 runSimulation();
+

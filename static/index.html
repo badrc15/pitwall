@@ -120,6 +120,23 @@
           <div><span class="summary-label">EXTRA SERVICE</span><b id="summary-service">0.0 s</b></div>
         </div>
         <div id="results-list" class="results-list"><div class="loading-state"><span class="loader"></span> Putting your race together…</div></div>
+        <section class="race-sim" aria-labelledby="race-sim-title">
+          <div class="race-sim-heading"><div><span class="sim-kicker">PUT YOUR CALL TO THE TEST</span><h3 id="race-sim-title">Race against the grid</h3><p>Pick one of your plans and see how it holds up against 10 fictional rivals.</p></div><span class="grid-count">11 CARS</span></div>
+          <div class="race-controls">
+            <label class="race-select-label" for="strategy-choice">YOUR STRATEGY<select id="strategy-choice"></select></label>
+            <label class="race-lap-label" for="current-lap">LAP NOW <output id="current-lap-out" for="current-lap">18</output></label>
+            <input id="current-lap" type="range" min="1" max="53" value="18">
+            <button id="run-race" class="race-button" type="button"><span>RUN RACE SIMULATION</span><span>→</span></button>
+          </div>
+          <div class="position-comparison" aria-live="polite">
+            <div class="position-card current"><span class="position-caption">YOUR POSITION NOW</span><b id="current-position">—</b><small id="current-position-copy">Set up the race above</small></div>
+            <div class="position-arrow" aria-hidden="true">→</div>
+            <div class="position-card projected"><span class="position-caption">PROJECTED AT THE FLAG</span><b id="projected-position">—</b><small id="projected-position-copy">Choose a plan and race it</small></div>
+          </div>
+          <div class="race-progress-wrap"><div class="race-progress-label"><span id="race-progress-text">READY ON THE GRID</span><span id="race-progress-lap">LAP — / —</span></div><div class="race-progress"><span id="race-progress-bar"></span></div></div>
+          <div id="race-leaderboard" class="race-leaderboard" aria-live="polite"><div class="leaderboard-empty">Your grid and projected finishing order will appear here.</div></div>
+          <p class="fictional-note">Fictional drivers · illustrative pace model · each run is repeatable for the same settings.</p>
+        </section>
         <div class="chart-heading"><span>RACE TIME VS ORIGINAL PLAN</span><span>QUICKER <b>←</b> SLOWER</span></div>
         <div id="impact-chart" class="impact-chart" aria-label="Visual comparison of time gained or lost against the original plan"></div>
         <div class="model-note" id="how-it-works"><div class="model-icon">i</div><div><h3>THE SHORT VERSION</h3><p>Each strategy estimates lap pace from tyre compound and wear. Your tyre swap, front-wing setting, and optional damage repair affect laps after the stop; extra service time is added to the race total. Every value is illustrative, so use the simulator to learn the trade-offs—not as a race prediction.</p><a href="https://www.fia.com/system/files/documents/fia_2026_f1_regulations_-_section_b_sporting_-_iss_08_-_2026-08-05_7.pdf" target="_blank" rel="noopener noreferrer">Read the FIA 2026 Sporting Regulations ↗</a></div></div>
@@ -130,3 +147,4 @@
   <script src="/app.js"></script>
 </body>
 </html>
+
